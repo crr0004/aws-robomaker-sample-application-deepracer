@@ -8,6 +8,7 @@ REQUIRES_PYTHON = '>=3.5.0'
 
 setup(
     name=NAME,
+	zip_safe=False,
     version='0.0.1',
     packages=find_packages(),
     python_requires=REQUIRES_PYTHON,
