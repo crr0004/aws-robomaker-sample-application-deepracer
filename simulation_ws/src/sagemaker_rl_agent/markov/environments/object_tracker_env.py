@@ -211,18 +211,21 @@ class TurtleBot3ObjectTrackerAndFollowerEnv(gym.Env):
         self.next_state = state
 
     def send_reward_to_cloudwatch(self, reward):
-        session = boto3.session.Session()
-        cloudwatch_client = session.client('cloudwatch', region_name=self.aws_region)
-        cloudwatch_client.put_metric_data(
-            MetricData=[
-                {
-                    'MetricName': 'ObjectTrackerRewardPerEpisode',
-                    'Unit': 'None',
-                    'Value': reward
-                },
-            ],
-            Namespace='AWSRoboMakerSimulation'
-        )
+    if os.environ.get("LOCAL") != None:
+            print("Reward " + str(reward))
+        else:
+            session = boto3.session.Session()
+            cloudwatch_client = session.client('cloudwatch', region_name=self.aws_region)
+            cloudwatch_client.put_metric_data(
+                MetricData=[
+                    {
+                        'MetricName': 'ObjectTrackerRewardPerEpisode',
+                        'Unit': 'None',
+                        'Value': reward
+                    },
+                ],
+                Namespace='AWSRoboMakerSimulation'
+            )
 
 class TurtleBot3ObjectTrackerAndFollowerDiscreteEnv(TurtleBot3ObjectTrackerAndFollowerEnv):
     def __init__(self):
