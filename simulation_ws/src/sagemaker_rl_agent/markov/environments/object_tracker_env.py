@@ -211,7 +211,7 @@ class TurtleBot3ObjectTrackerAndFollowerEnv(gym.Env):
         self.next_state = state
 
     def send_reward_to_cloudwatch(self, reward):
-    if os.environ.get("LOCAL") != None:
+        if os.environ.get("LOCAL") != None:
             print("Reward " + str(reward))
         else:
             session = boto3.session.Session()
