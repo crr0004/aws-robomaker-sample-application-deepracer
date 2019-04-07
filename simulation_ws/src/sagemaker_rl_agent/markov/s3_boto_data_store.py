@@ -215,8 +215,9 @@ class S3BotoDataStore(DataStore):
         return os.path.normpath(os.path.join(self.key_prefix, key))
 
     def _get_client(self):
+        endpoint_url = os.environ.get("S3_ENDPOINT_URL")
         session = boto3.session.Session()
-        return session.client('s3', region_name=self.params.aws_region)
+        return session.client('s3', region_name=self.params.aws_region, endpoint_url=endpoint_url)
 
     def _wait_for_ip_upload(self, timeout_in_second=600):
         start_time = time.time()
