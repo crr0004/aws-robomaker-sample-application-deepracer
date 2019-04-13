@@ -27,7 +27,7 @@ setup(
         'rospkg==1.1.7',
         'scipy==0.19.0',
         'tensorflow==1.11',
-        'rl-coach-slim==0.11.1'
+        'rl-coach-slim==0.11.0'
     ],
     entry_points = {
         'console_scripts': [

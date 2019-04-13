@@ -33,6 +33,7 @@ def rollout_worker(graph_manager, checkpoint_dir, data_store, num_workers):
     """
     wait for first checkpoint then perform rollouts using the model
     """
+    print("Waiting for checkpoint in {}".format(checkpoint_dir))
     utils.wait_for_checkpoint(checkpoint_dir)
 
     task_parameters = TaskParameters()
@@ -47,7 +48,9 @@ def rollout_worker(graph_manager, checkpoint_dir, data_store, num_workers):
             graph_manager.act(EnvironmentEpisodes(num_steps=act_steps + random.randint(0, 5)))
             # This waits for the first checkpoint
             last_checkpoint = data_store.get_current_checkpoint_number()
+            print("Waiting for checkpoint {}".format(last_checkpoint))
             data_store.load_from_store(expected_checkpoint_number=last_checkpoint + 1)
+            print("Getting for checkpoint {}".format(checkpoint_dir))
             graph_manager.restore_checkpoint()
 
 def main():
@@ -115,7 +118,9 @@ def main():
     graph_manager.data_store_params = data_store_params_instance
     graph_manager.data_store = data_store
 
+    print("Waiting for checkpoint")
     utils.wait_for_checkpoint(checkpoint_dir=args.local_model_directory, data_store=data_store)
+    print("Starting rollout worker")
     rollout_worker(
         graph_manager=graph_manager,
         checkpoint_dir=args.local_model_directory,
