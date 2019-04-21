@@ -232,6 +232,34 @@ void gazebo::RacecarPlugin::setUpWorld(const std::string worldName)
     vertices[1][0] = 1.08, vertices[1][1] = -0.05;
     vertices[2][0] = 2, vertices[2][1] = -0.05;
   }
+  else if (worldName.find("hard_speed_track") == 0)
+  {
+  numberOfVertices = 22;
+  margin = 0.22;
+  vertices[0][0] = 1.8, vertices[0][1] = 0.54;
+  vertices[1][0] = 2.5, vertices[1][1] = 0.58;
+  vertices[2][0] = 2.5, vertices[2][1] = 0.58;
+  vertices[3][0] = 3.5, vertices[3][1] = 0.58;
+  vertices[4][0] = 5.4, vertices[4][1] = 0.63;
+  vertices[5][0] = 5.7, vertices[5][1] = 0.78;
+  vertices[6][0] = 5.9, vertices[6][1] = 1.01;
+  vertices[7][0] = 6.03, vertices[7][1] = 1.47;
+  vertices[8][0] = 5.76, vertices[8][1] = 1.85;
+  vertices[9][0] = 5.30, vertices[9][1] = 2.06;
+  vertices[10][0] = 4.73, vertices[10][1] = 2.32;
+  vertices[11][0] = 4.23, vertices[11][1] = 2.63;
+  vertices[12][0] = 3.58, vertices[12][1] = 3.11;
+  vertices[13][0] = 2.80, vertices[13][1] = 3.74;
+  vertices[14][0] = 2.35, vertices[14][1] = 3.94;
+  vertices[15][0] = 1.27, vertices[15][1] = 3.91;
+  vertices[16][0] = 0.77, vertices[16][1] = 3.58;
+  vertices[17][0] = 0.64, vertices[17][1] = 3.14;
+  vertices[18][0] = 0.82, vertices[18][1] = 2.33;
+  vertices[19][0] = 0.92, vertices[19][1] = 1.79;
+  vertices[20][0] = 1.04, vertices[20][1] = 1.25;
+  vertices[21][0] = 1.17, vertices[21][1] = 0.92;
+  vertices[22][0] = 1.5, vertices[22][1] = 0.58;
+  }
   else if (worldName.find("hard_track") == 0)
   {
     numberOfVertices = 30;
@@ -267,6 +295,10 @@ void gazebo::RacecarPlugin::setUpWorld(const std::string worldName)
     vertices[28][0] = 1, vertices[28][1] = 1;
     vertices[29][0] = 1.25, vertices[29][1] = 0.7;
     vertices[30][0] = 1.5, vertices[30][1] = 0.58;
+  }
+  else
+  {
+  std::cout << worldName << " NOT SUPPORTED";
   }
 }
 
