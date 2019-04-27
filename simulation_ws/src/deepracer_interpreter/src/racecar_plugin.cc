@@ -260,6 +260,63 @@ void gazebo::RacecarPlugin::setUpWorld(const std::string worldName)
   vertices[21][0] = 1.17, vertices[21][1] = 0.92;
   vertices[22][0] = 1.5, vertices[22][1] = 0.58;
   }
+  else if(worldName.find("hard_loopy_track") == 0)
+		  {
+		  numberOfVertices = 51;
+		  margin = 0.22;
+		  vertices[0][0] = 2.08, vertices[0][1] = 0.3081;
+		  vertices[1][0] = 2.547, vertices[1][1] = 0.4787;
+		  vertices[2][0] = 2.768, vertices[2][1] = 0.7631;
+		  vertices[3][0] = 2.863, vertices[3][1] = 1.111;
+		  vertices[4][0] = 2.863, vertices[4][1] = 1.515;
+		  vertices[5][0] = 2.863, vertices[5][1] = 1.938;
+		  vertices[6][0] = 2.863, vertices[6][1] = 2.286;
+		  vertices[7][0] = 2.863, vertices[7][1] = 2.703;
+		  vertices[8][0] = 2.919, vertices[8][1] = 3.107;
+		  vertices[9][0] = 3.172, vertices[9][1] = 3.436;
+		  vertices[10][0] = 3.589, vertices[10][1] = 3.588;
+		  vertices[11][0] = 4.025, vertices[11][1] = 3.562;
+		  vertices[12][0] = 4.379, vertices[12][1] = 3.335;
+		  vertices[13][0] = 4.562, vertices[13][1] = 3.038;
+		  vertices[14][0] = 4.607, vertices[14][1] = 2.735;
+		  vertices[15][0] = 4.613, vertices[15][1] = 2.349;
+		  vertices[16][0] = 4.613, vertices[16][1] = 1.976;
+		  vertices[17][0] = 4.613, vertices[17][1] = 1.641;
+		  vertices[18][0] = 4.613, vertices[18][1] = 1.287;
+		  vertices[19][0] = 4.6, vertices[19][1] = 0.9456;
+		  vertices[20][0] = 4.771, vertices[20][1] = 0.636;
+		  vertices[21][0] = 5.036, vertices[21][1] = 0.4338;
+		  vertices[22][0] = 5.409, vertices[22][1] = 0.3074;
+		  vertices[23][0] = 5.833, vertices[23][1] = 0.4022;
+		  vertices[24][0] = 6.13, vertices[24][1] = 0.6992;
+		  vertices[25][0] = 6.243, vertices[25][1] = 1.034;
+		  vertices[26][0] = 6.281, vertices[26][1] = 1.388;
+		  vertices[27][0] = 6.281, vertices[27][1] = 1.862;
+		  vertices[28][0] = 6.281, vertices[28][1] = 2.26;
+		  vertices[29][0] = 6.281, vertices[29][1] = 2.651;
+		  vertices[30][0] = 6.281, vertices[30][1] = 3.125;
+		  vertices[31][0] = 6.281, vertices[31][1] = 3.553;
+		  vertices[32][0] = 6.18, vertices[32][1] = 3.868;
+		  vertices[33][0] = 5.953, vertices[33][1] = 4.134;
+		  vertices[34][0] = 5.58, vertices[34][1] = 4.241;
+		  vertices[35][0] = 5.124, vertices[35][1] = 4.241;
+		  vertices[36][0] = 4.714, vertices[36][1] = 4.241;
+		  vertices[37][0] = 4.214, vertices[37][1] = 4.241;
+		  vertices[38][0] = 3.399, vertices[38][1] = 4.241;
+		  vertices[39][0] = 2.678, vertices[39][1] = 4.241;
+		  vertices[40][0] = 1.958, vertices[40][1] = 4.241;
+		  vertices[41][0] = 1.465, vertices[41][1] = 4.14;
+		  vertices[42][0] = 1.143, vertices[42][1] = 3.85;
+		  vertices[43][0] = 1.048, vertices[43][1] = 3.395;
+		  vertices[44][0] = 1.048, vertices[44][1] = 2.933;
+		  vertices[45][0] = 1.048, vertices[45][1] = 2.415;
+		  vertices[46][0] = 1.048, vertices[46][1] = 1.922;
+		  vertices[47][0] = 1.048, vertices[47][1] = 1.473;
+		  vertices[48][0] = 1.048, vertices[48][1] = 1.037;
+		  vertices[49][0] = 1.225, vertices[49][1] = 0.658;
+		  vertices[50][0] = 1.446, vertices[50][1] = 0.4242;
+		  vertices[51][0] = 1.851, vertices[51][1] = 0.3081;
+		  }
   else if (worldName.find("hard_track") == 0)
   {
     numberOfVertices = 30;

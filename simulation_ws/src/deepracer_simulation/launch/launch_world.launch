@@ -8,7 +8,7 @@
 
  
 <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find deepracer_simulation)/worlds/hard_speed_track.world"/>
+    <arg name="world_name" value="$(find deepracer_simulation)/worlds/hard_loopy_track.world"/>
     <arg name="gui" value="true"/>
   </include>
 <param name="robot_description" command="$(find xacro)/xacro '$(find deepracer_simulation)/urdf/racecar.xacro'" />
