@@ -7,12 +7,13 @@ import boto3
 from google.protobuf import text_format
 from tensorflow.python.training.checkpoint_state_pb2 import CheckpointState
 
-from rl_coach.data_stores.data_store import DataStore, DataStoreParameters
+from rl_coach.data_stores.data_store import DataStore, DataStoreParameters, SyncFiles
 from markov import utils
 
 CHECKPOINT_METADATA_FILENAME = "checkpoint"
-SLEEP_TIME_WHILE_WAITING_FOR_DATA_FROM_TRAINER_IN_SECOND = 2
+SLEEP_TIME_WHILE_WAITING_FOR_DATA_FROM_TRAINER_IN_SECOND = 1
 IP_KEY = "IP"
+
 
 class S3BotoDataStoreParameters(DataStoreParameters):
     def __init__(self, aws_region: str = "us-west-2", bucket_name: str = None, s3_folder: str = None,
@@ -28,11 +29,18 @@ class S3BotoDataStoreParameters(DataStoreParameters):
 class S3BotoDataStore(DataStore):
     def __init__(self, params: S3BotoDataStoreParameters):
         self.params = params
-        self.key_prefix = os.path.join(self.params.s3_folder, "model/")
-        self.ip_data_key = os.path.join(self.params.s3_folder, "ip/ip.json")
-        self.ip_done_key = os.path.join(self.params.s3_folder, "ip/done")
-        self.preset_data_prefix = os.path.join(self.params.s3_folder, "presets/")
-        self.environment_data_prefix = os.path.join(self.params.s3_folder, "environments/")
+        self.key_prefix = os.path.normpath(self.params.s3_folder + "/model")
+        self.ip_data_key = os.path.normpath(self.params.s3_folder + "/ip/ip.json")
+        self.ip_done_key = os.path.normpath(self.params.s3_folder + "/ip/done")
+        self.preset_data_key = os.path.normpath(self.params.s3_folder + "/presets/preset.py")
+        self.graph_manager = None
+
+    def _get_s3_key(self, key):
+        return os.path.normpath(self.key_prefix + "/" + key)
+
+    def _get_client(self):
+        session = boto3.session.Session()
+        return session.client('s3', region_name=self.params.aws_region)
 
     def deploy(self) -> bool:
         return True
@@ -43,12 +51,15 @@ class S3BotoDataStore(DataStore):
     def undeploy(self) -> bool:
         return True
 
+    def upload_finished_file(self):
+        s3_client = self._get_client()
+        s3_client.upload_fileobj(Fileobj=io.BytesIO(b''),
+                                 Bucket=self.params.bucket,
+                                 Key=self._get_s3_key(SyncFiles.FINISHED.value))
+
     def save_to_store(self):
         try:
             s3_client = self._get_client()
-
-            if self.graph_manager:
-                utils.write_frozen_graph(self.graph_manager, self.params.checkpoint_dir)
 
             # Delete any existing lock file
             s3_client.delete_object(Bucket=self.params.bucket, Key=self._get_s3_key(self.params.lock_file))
@@ -59,12 +70,20 @@ class S3BotoDataStore(DataStore):
                                      Key=self._get_s3_key(self.params.lock_file))
 
             # Start writing the model checkpoints to S3
+            checkpoint = self._get_current_checkpoint()
+            if checkpoint:
+                checkpoint_number = self._get_checkpoint_number(checkpoint)
+
             checkpoint_file = None
             for root, dirs, files in os.walk(self.params.checkpoint_dir):
+                num_files_uploaded = 0
                 for filename in files:
                     # Skip the checkpoint file that has the latest checkpoint number
                     if filename == CHECKPOINT_METADATA_FILENAME:
                         checkpoint_file = (root, filename)
+                        continue
+
+                    if not filename.startswith(str(checkpoint_number)):
                         continue
 
                     # Upload all the other files from the checkpoint directory
@@ -73,6 +92,8 @@ class S3BotoDataStore(DataStore):
                     s3_client.upload_file(Filename=abs_name,
                                           Bucket=self.params.bucket,
                                           Key=self._get_s3_key(rel_name))
+                    num_files_uploaded += 1
+            print("Uploaded %s files for checkpoint %s" % (num_files_uploaded, checkpoint_number))
 
             # After all the checkpoint files have been uploaded, we upload the version file.
             abs_name = os.path.abspath(os.path.join(checkpoint_file[0], checkpoint_file[1]))
@@ -84,12 +105,26 @@ class S3BotoDataStore(DataStore):
             # Release the lock by deleting the lock file from S3
             s3_client.delete_object(Bucket=self.params.bucket, Key=self._get_s3_key(self.params.lock_file))
 
+            # Upload the frozen graph which is used for deployment
+            if self.graph_manager:
+                utils.write_frozen_graph(self.graph_manager)
+                # upload the model_<ID>.pb to S3. NOTE: there's no cleanup as we don't know the best checkpoint
+                iteration_id = self.graph_manager.level_managers[0].agents['agent'].training_iteration
+                frozen_graph_fpath = utils.SM_MODEL_OUTPUT_DIR + "/model.pb"
+                frozen_graph_s3_name = "model_%s.pb" % iteration_id
+                s3_client.upload_file(Filename=frozen_graph_fpath,
+                                  Bucket=self.params.bucket,
+                                  Key=self._get_s3_key(frozen_graph_s3_name))
+                print ("saved intermediate frozen graph: ", self._get_s3_key(frozen_graph_s3_name)) 
+
+            print("Trying to clean up old checkpoints.")
+            # Clean up old checkpoints
             checkpoint = self._get_current_checkpoint()
             if checkpoint:
                 checkpoint_number = self._get_checkpoint_number(checkpoint)
                 checkpoint_number_to_delete = checkpoint_number - 4
 
-                # List all the old checkpoint files that needs to be deleted
+                # List all the old checkpoint files to be deleted
                 response = s3_client.list_objects_v2(Bucket=self.params.bucket,
                                                      Prefix=self._get_s3_key(str(checkpoint_number_to_delete) + "_"))
                 if "Contents" in response:
@@ -99,8 +134,9 @@ class S3BotoDataStore(DataStore):
                                                 Key=obj["Key"])
                         num_files += 1
 
-                    print("Deleted %s model files from S3" % num_files)
-                    return True
+                    print("Deleted %s old model files from S3" % num_files)
+                else:
+                    print("Cleanup was not required.")
         except Exception as e:
             raise e
 
@@ -112,6 +148,18 @@ class S3BotoDataStore(DataStore):
 
             while True:
                 s3_client = self._get_client()
+                # Check if there's a finished file
+                response = s3_client.list_objects_v2(Bucket=self.params.bucket,
+                                                     Prefix=self._get_s3_key(SyncFiles.FINISHED.value))
+                if "Contents" in response:
+                    finished_file_path = os.path.abspath(os.path.join(self.params.checkpoint_dir,
+                                                                      SyncFiles.FINISHED.value))
+                    s3_client.download_file(Bucket=self.params.bucket,
+                                            Key=self._get_s3_key(SyncFiles.FINISHED.value),
+                                            Filename=finished_file_path)
+                    return False
+
+                # Check if there's a lock file
                 response = s3_client.list_objects_v2(Bucket=self.params.bucket,
                                                      Prefix=self._get_s3_key(self.params.lock_file))
 
@@ -122,7 +170,7 @@ class S3BotoDataStore(DataStore):
                                                 Key=self._get_s3_key(CHECKPOINT_METADATA_FILENAME),
                                                 Filename=filename)
                     except Exception as e:
-                        print("Got exception while downloading checkpoint", e)
+                        print("Could not retrieve model checkpoint from S3. Will retry after some time.")
                         time.sleep(SLEEP_TIME_WHILE_WAITING_FOR_DATA_FROM_TRAINER_IN_SECOND)
                         continue
                 else:
@@ -136,6 +184,7 @@ class S3BotoDataStore(DataStore):
                     # if we get a checkpoint that is older that the expected checkpoint, we wait for
                     #  the new checkpoint to arrive.
                     if checkpoint_number < expected_checkpoint_number:
+                        print("Expecting checkpoint >= %s. Waiting." % expected_checkpoint_number)
                         time.sleep(SLEEP_TIME_WHILE_WAITING_FOR_DATA_FROM_TRAINER_IN_SECOND)
                         continue
 
@@ -146,8 +195,9 @@ class S3BotoDataStore(DataStore):
                         num_files = 0
                         for obj in response["Contents"]:
                             # Get the local filename of the checkpoint file
+                            full_key_prefix = os.path.normpath(self.key_prefix) + "/"
                             filename = os.path.abspath(os.path.join(self.params.checkpoint_dir,
-                                                                    obj["Key"].replace(self.key_prefix, "")))
+                                                                    obj["Key"].replace(full_key_prefix, "")))
                             s3_client.download_file(Bucket=self.params.bucket,
                                                     Key=obj["Key"],
                                                     Filename=filename)
@@ -179,45 +229,21 @@ class S3BotoDataStore(DataStore):
         except Exception as e:
             raise RuntimeError("Cannot fetch IP of redis server running in SageMaker:", e)
 
-    def download_presets_if_present(self, local_path):
-        return self._download_directory(self.params.bucket, self.preset_data_prefix, local_path)
-
-    def download_environments_if_present(self, local_path):
-        return self._download_directory(self.params.bucket, self.environment_data_prefix, local_path)
-
-    def get_current_checkpoint_number(self):
-        return self._get_checkpoint_number(self._get_current_checkpoint())
-
-    def _download_directory(self, s3_bucket, s3_prefix, local_path):
+    def download_preset_if_present(self, local_path):
         s3_client = self._get_client()
-        response = s3_client.list_objects_v2(Bucket=s3_bucket,
-                                             Prefix=s3_prefix)
+        response = s3_client.list_objects(Bucket=self.params.bucket, Prefix=self.preset_data_key)
 
+        # If we don't find a preset, return false
         if "Contents" not in response:
             return False
 
-        if "Contents" in response:
-            try:
-                for obj in response["Contents"]:
-                    filename = os.path.abspath(os.path.join(local_path,
-                                                            obj["Key"].replace(s3_prefix, "")))
-                    if s3_client.download_file(Bucket=s3_bucket, Key=obj["Key"], Filename=filename) == False:
-                        print("Failed downloading object, Bucket: ", s3_bucket,
-                              ", Key ", obj["key"])
-                        return False
-            except Exception as e:
-                print("Got exception while downloading checkpoint", e)
-                return False
+        success = s3_client.download_file(Bucket=self.params.bucket,
+                                          Key=self.preset_data_key,
+                                          Filename=local_path)
+        return success
 
-        return True
-
-    def _get_s3_key(self, key):
-        return os.path.normpath(os.path.join(self.key_prefix, key))
-
-    def _get_client(self):
-        endpoint_url = os.environ.get("S3_ENDPOINT_URL")
-        session = boto3.session.Session()
-        return session.client('s3', region_name=self.params.aws_region, endpoint_url=endpoint_url)
+    def get_current_checkpoint_number(self):
+        return self._get_checkpoint_number(self._get_current_checkpoint())
 
     def _wait_for_ip_upload(self, timeout_in_second=600):
         start_time = time.time()

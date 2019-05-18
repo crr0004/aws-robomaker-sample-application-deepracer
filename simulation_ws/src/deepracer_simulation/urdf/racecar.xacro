@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot name="racecar" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:include filename="$(find deepracer_simulation)/urdf/macros.xacro" />
+  <xacro:include filename="$(find deepracer_simulation_environment)/urdf/macros.xacro" />
 
   <!-- Add chassis and it's inertia link -->
 
@@ -173,7 +173,7 @@
     <axis xyz="0 0 -1" />
     <limit effort="10" velocity="100"/>
   </joint>
-  
+
   <xacro:wheel_transmission name="right_front_wheel" />
 
   <!-- zed camera -->
@@ -231,7 +231,7 @@
     <axis xyz="0 0 1" />
   </joint>
   <joint name="zed_camera_right_joint" type="fixed">
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <origin xyz="0 -0 0" rpy="0 0 0"/>
     <parent link="zed_camera_link"/>
     <child link="zed_camera_right_link"/>
     <axis xyz="0 0 1" />
@@ -239,7 +239,7 @@
 
   <!-- Add the remaining xacros -->
 
-  <xacro:include filename="$(find deepracer_simulation)/urdf/racecar.gazebo" />
-  <xacro:include filename="$(find deepracer_simulation)/urdf/materials.xacro" />
+  <xacro:include filename="$(find deepracer_simulation_environment)/urdf/racecar.gazebo" />
+  <xacro:include filename="$(find deepracer_simulation_environment)/urdf/materials.xacro" />
 
 </robot>

@@ -1,8 +1,12 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="world_name" />
+  <arg name="kinesis_video_stream_name" />
+  <arg name="kinesis_video_stream_region" default="us-east-1" />
 
-  <include file="$(find deepracer_simulation)/launch/racecar.launch">
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch">
     <arg name="world_name" value="$(arg world_name)"/>
+    <arg name="kinesis_video_stream_name" value="$(arg kinesis_video_stream_name)"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
   </include>
 </launch>

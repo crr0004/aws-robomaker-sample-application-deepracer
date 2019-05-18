@@ -34,7 +34,7 @@
   <mu2 value="0.5"/>
   <kp  value="1000000.0" />
   <kd  value="1.0" />
-  <fdir1 value="0 0 1"/>
+  <fdir1 value="1 0 0"/>
   <material>Gazebo/Black</material>
 </gazebo>
 
@@ -43,7 +43,7 @@
   <mu2 value="0.5"/>
   <kp  value="1000000.0" />
   <kd  value="1.0" />
-  <fdir1 value="0 0 1"/>
+  <fdir1 value="1 0 0"/>
   <material>Gazebo/Black</material>
 </gazebo>
 
@@ -70,7 +70,7 @@
         <image>
           <width>640</width>
           <height>480</height>
-          <format>B8G8R8</format>
+          <format>R8G8B8</format>
         </image>
         <clip>
           <near>0.02</near>
