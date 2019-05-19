@@ -12,10 +12,9 @@
 
     <param name="JOB_TYPE" value="EVALUATION" />
 
-    <include file="$(find deepracer_simulation_environment)/launch/racetrack_with_racecar.launch">
+    <include file="$(find deepracer_simulation)/launch/racetrack_with_racecar.launch">
         <arg name="world_name" value="$(env WORLD_NAME)" />
-        <arg name="kinesis_video_stream_name" value="$(env KINESIS_VIDEO_STREAM_NAME)" />
     </include>
 
-    <node name="agent" pkg="deepracer_simulation_environment" type="run_evaluation_rl_agent.sh" output="screen" required="true"/>
+    <node name="agent" pkg="deepracer_simulation" type="run_evaluation_rl_agent.sh" output="screen" required="true"/>
 </launch>
