@@ -105,7 +105,7 @@ class DeepRacerRacetrackEnv(gym.Env):
             if not BUNDLE_CURRENT_PREFIX:
                 raise ValueError("Cannot get BUNDLE_CURRENT_PREFIX")
             route_file_name = os.path.join(BUNDLE_CURRENT_PREFIX,
-                'opt', 'install', 'deepracer_simulation', 'share',
+                'install', 'deepracer_simulation', 'share',
                 'deepracer_simulation', 'routes', '{}.npy'.format(self.world_name))
             waypoints = np.load(route_file_name)
             self.is_loop = np.all(waypoints[0,:] == waypoints[-1,:])
@@ -422,7 +422,8 @@ class DeepRacerRacetrackEnv(gym.Env):
 
     def write_metrics_to_s3(self):
         session = boto3.session.Session()
-        s3_client = session.client('s3', region_name=self.aws_region)
+        s3_url = os.environ.get('S3_ENDPOINT_URL')
+        s3_client = session.client('s3', region_name=self.aws_region, endpoint_url=s3_url)
         metrics_body = json.dumps({'metrics': self.metrics})
         s3_client.put_object(
             Bucket=self.metrics_s3_bucket,
@@ -457,24 +458,28 @@ class DeepRacerRacetrackEnv(gym.Env):
         )
 
     def send_reward_to_cloudwatch(self, reward):
-        session = boto3.session.Session()
-        cloudwatch_client = session.client('cloudwatch', region_name=self.aws_region)
-        cloudwatch_client.put_metric_data(
-            MetricData=[
-                {
-                    'MetricName': self.metric_name,
-                    'Dimensions': [
-                        {
-                            'Name': 'TRAINING_JOB_ARN',
-                            'Value': self.training_job_arn
-                        },
-                    ],
-                    'Unit': 'None',
-                    'Value': reward
-                },
-            ],
-            Namespace=self.metric_namespace
-        )
+        isLocal = os.environ.get("LOCAL")
+        if isLocal == None:
+            session = boto3.session.Session()
+            cloudwatch_client = session.client('cloudwatch', region_name=self.aws_region)
+            cloudwatch_client.put_metric_data(
+                MetricData=[
+                    {
+                        'MetricName': self.metric_name,
+                        'Dimensions': [
+                            {
+                                'Name': 'TRAINING_JOB_ARN',
+                                'Value': self.training_job_arn
+                            },
+                        ],
+                        'Unit': 'None',
+                        'Value': reward
+                    },
+                ],
+                Namespace=self.metric_namespace
+            )
+        else:
+            print("{}: {}".format(self.metric_name, reward))
 
 class DeepRacerRacetrackCustomActionSpaceEnv(DeepRacerRacetrackEnv):
     def __init__(self):
